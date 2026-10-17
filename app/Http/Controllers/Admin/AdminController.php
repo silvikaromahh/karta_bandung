@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Illuminate\Support\Facades\Storage;   
 use App\Http\Controllers\Controller;
 use App\Models\GameMatch;
 use App\Models\News;
