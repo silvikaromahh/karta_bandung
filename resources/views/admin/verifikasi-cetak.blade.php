@@ -723,11 +723,11 @@
                         </div>
                     </div>
 
-                    <!-- Dokumen Foto Kolom Kanan (Pas Foto, KTP, KK) -->
+                    <!-- Dokumen Foto Kolom Kanan (Pas Foto, KTP, KK, Surat Sehat) -->
                     <div class="col-lg-8 col-md-8">
                         <div class="row g-2">
                             <!-- 1. Pas Foto Pemain (Portrait) -->
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="doc-box doc-box-pasfoto">
                                     <div class="doc-box-tag">
                                         <span><i class="fas fa-portrait me-1 text-primary"></i> Pas Foto</span>
@@ -754,7 +754,7 @@
                             </div>
 
                             <!-- 2. Foto KTP Pemain (Landscape) -->
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="doc-box doc-box-doc">
                                     <div class="doc-box-tag">
                                         <span><i class="fas fa-id-card me-1 text-success"></i> E-KTP</span>
@@ -781,7 +781,7 @@
                             </div>
 
                             <!-- 3. Foto KK Pemain (Landscape) -->
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="doc-box doc-box-doc">
                                     <div class="doc-box-tag">
                                         <span><i class="fas fa-users me-1 text-warning"></i> KK Asli</span>
@@ -801,6 +801,33 @@
                                     @else
                                         <div class="py-4 text-muted small bg-light d-flex align-items-center justify-content-center flex-column" style="height:145px;">
                                             <i class="fas fa-file-invoice fa-2x mb-1 text-secondary opacity-40"></i>
+                                            <span style="font-size:0.68rem;">Tidak Ada</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- 4. Surat Keterangan Sehat Pemain -->
+                            <div class="col-6">
+                                <div class="doc-box doc-box-doc">
+                                    <div class="doc-box-tag">
+                                        <span><i class="fas fa-heartbeat me-1 text-danger"></i> Surat Sehat</span>
+                                        <span class="text-muted" style="font-size:0.58rem;">Kesehatan</span>
+                                    </div>
+                                    @if($pem->surat_sehat_path)
+                                        <div class="doc-box-image-wrap" onclick="previewImage('{{ Storage::url($pem->surat_sehat_path) }}', 'Surat Keterangan Sehat - {{ $pem->full_name }}', 'surat_sehat_{{ Str::slug($pem->full_name) }}.{{ pathinfo($pem->surat_sehat_path, PATHINFO_EXTENSION) }}')">
+                                            <img src="{{ Storage::url($pem->surat_sehat_path) }}" alt="Surat Keterangan Sehat">
+                                            <div class="doc-zoom-overlay"><i class="fas fa-search-plus"></i> Zoom</div>
+                                        </div>
+                                        <div class="doc-box-bottom">
+                                            <span class="text-muted" style="font-size:0.63rem;">Surat Sehat</span>
+                                            <a href="{{ Storage::url($pem->surat_sehat_path) }}" download="surat_sehat_{{ Str::slug($pem->full_name) }}.{{ pathinfo($pem->surat_sehat_path, PATHINFO_EXTENSION) }}" class="btn-action-mini" title="Unduh Surat Keterangan Sehat">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </div>
+                                    @else
+                                        <div class="py-4 text-muted small bg-light d-flex align-items-center justify-content-center flex-column" style="height:145px;">
+                                            <i class="fas fa-heartbeat fa-2x mb-1 text-secondary opacity-40"></i>
                                             <span style="font-size:0.68rem;">Tidak Ada</span>
                                         </div>
                                     @endif

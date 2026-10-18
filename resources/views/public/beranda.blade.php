@@ -19,10 +19,7 @@
                 </p>
                 <div class="d-flex flex-wrap gap-3 mb-5">
                     <a href="{{ route('register') }}" class="btn btn-green btn-lg fw-bold px-4">
-                        <i class="fas fa-futbol me-2"></i> Daftar Sekarang
-                    </a>
-                    <a href="{{ route('tentang') }}" class="btn btn-outline-light btn-lg px-4">
-                        <i class="fas fa-info-circle me-2"></i> Pelajari Lebih Lanjut
+                        <i class="fas fa-futbol me-2"></i> Masuk/Login
                     </a>
                 </div>
 

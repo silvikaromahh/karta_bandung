@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Illuminate\Support\Facades\Storage;   
 use App\Http\Controllers\Controller;
 use App\Models\GameMatch;
 use App\Models\News;
@@ -99,6 +100,24 @@ class AdminController extends Controller
     {
         $registration = Registration::with(['user', 'verifier', 'members'])->findOrFail($id);
         return view('admin.verifikasi-cetak', compact('registration'));
+    }
+
+    public function destroyAnggotaTerverifikasi($registrationId, $memberId)
+    {
+        $registration = Registration::findOrFail($registrationId);
+        if ($registration->status !== 'Terverifikasi') {
+            return back()->with('error', 'Data pemain dan official hanya dapat dihapus setelah pendaftaran terverifikasi.');
+        }
+
+        $member = $registration->members()->findOrFail($memberId);
+        foreach (['ktp_path', 'kk_path', 'pasfoto_path', 'surat_sehat_path'] as $documentPath) {
+            if ($member->{$documentPath}) {
+                Storage::disk('public')->delete($member->{$documentPath});
+            }
+        }
+        $member->delete();
+
+        return back()->with('success', ucfirst($member->tipe) . ' ' . $member->full_name . ' berhasil dihapus.');
     }
 
     public function terima($id)

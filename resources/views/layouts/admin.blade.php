@@ -14,7 +14,7 @@
             </div>
         </div>
 
-        <nav class="flex-grow-1 py-2">
+        <nav class="py-2">
             <div class="nav-section">Utama</div>
             <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="fas fa-tachometer-alt"></i> Dashboard

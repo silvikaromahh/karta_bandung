@@ -93,7 +93,7 @@
 
 <div class="row g-4">
     <!-- GRAFIK PENDAFTARAN -->
-    <div class="col-lg-8">
+    {{-- <div class="col-lg-8">
         <div class="card border-0 card-karta">
             <div class="card-header border-0 bg-white d-flex align-items-center justify-content-between py-3">
                 <div>
@@ -106,7 +106,7 @@
                 <canvas id="regChart" height="100"></canvas>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- VERIFIKASI PERLU -->
     <div class="col-lg-4">

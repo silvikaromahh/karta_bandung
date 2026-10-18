@@ -16,7 +16,7 @@
 
         @php $reg = auth()->user()->registration; @endphp
 
-        <nav class="flex-grow-1 py-2">
+        <nav class="py-2">
             <a href="{{ route('peserta.dashboard') }}" class="nav-link {{ request()->routeIs('peserta.dashboard') ? 'active' : '' }}">
                 <i class="fas fa-home"></i> Dashboard
             </a>

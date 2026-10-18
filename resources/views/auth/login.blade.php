@@ -96,7 +96,8 @@
                             </button>
                         </form>
 
-                        <div class="mt-4 p-3 rounded-3 small" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                        {{--
+			 <div class="mt-4 p-3 rounded-3 small" style="background:#f0fdf4;border:1px solid #bbf7d0;">
                             <div class="mb-1">
                                 <i class="fas fa-info-circle text-success me-1"></i>
                                 <strong>Akun Kecamatan:</strong> Masukkan email <code>[nama-kecamatan]@karta-bdg.id</code>
@@ -105,7 +106,8 @@
                                 <i class="fas fa-key text-success me-1"></i>
                                 <strong>Kata Sandi:</strong> <code>12345678</code>
                             </div>
-                        </div>
+                        </div> 
+			--}}
                     </div>
 
                 </div>

@@ -41,6 +41,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/verifikasi', [AdminController::class, 'verifikasi'])->name('verifikasi');
     Route::get('/verifikasi/{id}', [AdminController::class, 'verifikasiDetail'])->name('verifikasi.detail');
     Route::get('/verifikasi/{id}/cetak', [AdminController::class, 'verifikasiCetak'])->name('verifikasi.cetak');
+    Route::delete('/verifikasi/{registration}/anggota/{member}', [AdminController::class, 'destroyAnggotaTerverifikasi'])->name('verifikasi.anggota.destroy');
     Route::post('/verifikasi/{id}/terima', [AdminController::class, 'terima'])->name('verifikasi.terima');
     Route::post('/verifikasi/{id}/tolak', [AdminController::class, 'tolak'])->name('verifikasi.tolak');
 
