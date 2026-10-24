@@ -42,7 +42,9 @@
                     <h5 class="fw-bold mb-1" style="color:#0a1628;">Status: {{ $info['label'] }}</h5>
                     <p class="text-muted mb-0 small">
                         @if($reg && $reg->status === 'Menunggu Verifikasi')
-                            Data tim berhasil disimpan ke sistem. Anda dapat terus melengkapi data pemain & official secara bertahap sampai kuota maksimal (25 pemain, 5 official).
+                            Pendaftaran Anda masih aktif. Anda dapat memperbarui dan menambahkan data peserta atau official.
+                        @elseif($reg && $reg->status === 'Terverifikasi')
+                            Pendaftaran tim Anda sudah terverifikasi dan resmi terkunci oleh panitia. Hubungi panitia jika perlu perubahan data.
                         @else
                             {{ $info['desc'] }}
                         @endif
@@ -55,17 +57,100 @@
                 </div>
             </div>
 
-            {{-- Progress Counter Data Tersimpan --}}
+            {{-- Ringkasan Cepat --}}
             <div class="d-flex align-items-center gap-2">
                 <div class="text-center p-2 px-3 rounded-3 bg-light border">
-                    <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Peserta Tersimpan</div>
+                    <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Peserta</div>
                     <div class="fs-5 fw-bold text-primary"><span class="display-pemain-count">{{ count($pemainList) }}</span>/25</div>
                 </div>
                 <div class="text-center p-2 px-3 rounded-3 bg-light border">
-                    <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Official Tersimpan</div>
+                    <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Official</div>
                     <div class="fs-5 fw-bold text-info"><span class="display-official-count">{{ count($officialList) }}</span>/5</div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- KARTU PROGRES DATA SAAT INI --}}
+<div class="card border-0 card-karta mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold mb-1" style="color:#0a1628;">
+                    <i class="fas fa-tasks text-success me-2"></i> Data Saat Ini
+                </h6>
+                <p class="text-muted small mb-0">Pantau progres pengisian data peserta dan official tim Anda</p>
+            </div>
+            <div id="badgeMaksimalPill" class="{{ (count($pemainList) >= 25 && count($officialList) >= 5) ? '' : 'd-none' }}">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-bold">
+                    <i class="fas fa-check-circle me-1"></i> 25 / 25 Peserta &bull; 5 / 5 Official
+                </span>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            {{-- Progres Peserta --}}
+            <div class="col-md-6">
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold text-dark small">
+                            <i class="fas fa-users text-primary me-1"></i> Peserta
+                        </span>
+                        <span class="fw-bold fs-6 text-primary">
+                            <span class="display-pemain-count">{{ count($pemainList) }}</span> / 25
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e2e8f0;">
+                        <div id="progressBarPemain" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                             role="progressbar" 
+                             style="width: {{ min(100, (count($pemainList) / 25) * 100) }}%; transition: width 0.3s ease;" 
+                             aria-valuenow="{{ count($pemainList) }}" aria-valuemin="0" aria-valuemax="25">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 small text-muted" style="font-size: 0.75rem;">
+                        <span>Min. 1 Peserta</span>
+                        <span id="textStatusPemain" class="fw-semibold text-primary">
+                            {{ count($pemainList) >= 25 ? 'Maksimal 25 Peserta' : 'Sisa kuota: ' . (25 - count($pemainList)) . ' peserta' }}
+                        </span>
+                        <span>Maks. 25</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Progres Official --}}
+            <div class="col-md-6">
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold text-dark small">
+                            <i class="fas fa-user-tie text-info me-1"></i> Official
+                        </span>
+                        <span class="fw-bold fs-6 text-info">
+                            <span class="display-official-count">{{ count($officialList) }}</span> / 5
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e2e8f0;">
+                        <div id="progressBarOfficial" class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                             role="progressbar" 
+                             style="width: {{ min(100, (count($officialList) / 5) * 100) }}%; transition: width 0.3s ease;" 
+                             aria-valuenow="{{ count($officialList) }}" aria-valuemin="0" aria-valuemax="5">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 small text-muted" style="font-size: 0.75rem;">
+                        <span>Opsional</span>
+                        <span id="textStatusOfficial" class="fw-semibold text-info">
+                            {{ count($officialList) >= 5 ? 'Maksimal 5 Official' : 'Sisa kuota: ' . (5 - count($officialList)) . ' official' }}
+                        </span>
+                        <span>Maks. 5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Banner jika sudah maksimal --}}
+        <div id="bannerMaksimal" class="alert alert-success d-flex align-items-center gap-2 mb-0 mt-3 py-2 px-3 fw-bold small {{ (count($pemainList) >= 25 && count($officialList) >= 5) ? '' : 'd-none' }}">
+            <i class="fas fa-check-circle fa-lg"></i>
+            <span>Data peserta dan official sudah maksimal.</span>
         </div>
     </div>
 </div>
@@ -75,8 +160,19 @@
     @csrf
 
     @if($errors->any())
-    <div class="alert alert-danger py-2 small mb-4">
-        <ul class="mb-0 ps-3">@foreach(array_unique($errors->all()) as $e)<li>{{ $e }}</li>@endforeach</ul>
+    <div class="alert alert-danger py-3 px-4 mb-4 shadow-sm border-0 rounded-3" id="validationErrorsBox" style="background:#fee2e2;border-left:5px solid #ef4444!important;">
+        <div class="d-flex align-items-center gap-2 fw-bold text-danger mb-2">
+            <i class="fas fa-exclamation-triangle fa-lg"></i>
+            <span>Ada data yang belum sesuai (Formulir belum tersimpan):</span>
+        </div>
+        <ul class="mb-0 ps-3 text-danger small">
+            @foreach(array_unique($errors->all()) as $e)
+                <li>{{ $e }}</li>
+            @endforeach
+        </ul>
+        <div class="mt-2 text-muted small fst-italic">
+            * Catatan: Karena validasi belum terpenuhi, data belum tersimpan ke server. Silakan lengkapi / perbaiki data dan pilih file kembali sebelum mengirim ulang.
+        </div>
     </div>
     @endif
 
@@ -115,11 +211,13 @@
                     <label class="form-label fw-semibold small">Surat Rekomendasi (PDF/Gambar, Max 2MB) <span class="text-danger">*</span></label>
                     <input type="file" name="surat_rekomendasi" class="form-control" accept=".pdf,.jpg,.jpeg,.png" {{ (!$reg || !$reg->surat_rekomendasi_path) ? 'required' : '' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
                     @if($reg && $reg->surat_rekomendasi_path)
-                    <div class="mt-2">
-                        <a href="{{ asset('storage/' . $reg->surat_rekomendasi_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <div class="mt-2 d-flex align-items-center gap-2">
+                        <a href="{{ Storage::url($reg->surat_rekomendasi_path) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
                             <i class="fas fa-file-pdf me-1"></i> Lihat Surat Rekomendasi
                         </a>
+                        <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                     </div>
+                    <small class="text-muted d-block mt-1" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                     @endif
                 </div>
             </div>
@@ -136,9 +234,9 @@
                 </span>
             </div>
             @if(!$reg || $reg->status != 'Terverifikasi')
-            <button type="button" class="btn btn-sm btn-outline-primary" id="btnTambahPemain" {{ count($pemainList) >= 25 ? 'disabled' : '' }}>
+            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btnTambahPemain" {{ count($pemainList) >= 25 ? 'disabled' : '' }}>
                 <i class="fas {{ count($pemainList) >= 25 ? 'fa-check' : 'fa-plus' }} me-1"></i>
-                {{ count($pemainList) >= 25 ? 'Maksimal 25 Pemain Tercapai' : 'Tambah Pemain' }}
+                {{ count($pemainList) >= 25 ? 'Tambah Pemain (Maksimal)' : '+ Tambah Pemain' }}
             </button>
             @endif
         </div>
@@ -146,6 +244,13 @@
             @php $pemainList = old('pemain', $reg ? $reg->members()->where('tipe', 'pemain')->get()->toArray() : [[]]); @endphp
             
             @foreach($pemainList as $index => $pemain)
+            @php
+                $dbPemain = (isset($pemain['id']) && $reg) ? $reg->members->firstWhere('id', $pemain['id']) : null;
+                $pPasfoto = $pemain['pasfoto_path'] ?? ($dbPemain->pasfoto_path ?? null);
+                $pKtp = $pemain['ktp_path'] ?? ($dbPemain->ktp_path ?? null);
+                $pKk = $pemain['kk_path'] ?? ($dbPemain->kk_path ?? null);
+                $pSuratSehat = $pemain['surat_sehat_path'] ?? ($dbPemain->surat_sehat_path ?? null);
+            @endphp
             <div class="pemain-item border p-3 mb-3 rounded position-relative">
                 @if(!$reg || $reg->status != 'Terverifikasi')
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-hapus-pemain" aria-label="Close"></button>
@@ -163,11 +268,11 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">NIK</label>
-                        <input type="text" name="pemain[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" value="{{ $pemain['nik'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="pemain[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" value="{{ $pemain['nik'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Nomor KK</label>
-                        <input type="text" name="pemain[{{ $index }}][nomor_kk]" class="form-control form-control-sm" maxlength="16" placeholder="16 digit" value="{{ $pemain['nomor_kk'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="pemain[{{ $index }}][nomor_kk]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" placeholder="16 digit" value="{{ $pemain['nomor_kk'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
                         <small class="text-muted d-block mt-1">Masukkan 16 digit nomor Kartu Keluarga.</small>
                     </div>
                     <div class="col-md-6">
@@ -189,31 +294,63 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Pas Foto (Max 2MB)</label>
-                        @if(isset($pemain['pasfoto_path']) && $pemain['pasfoto_path'])
-                            <div class="mb-1"><a href="{{ Storage::url($pemain['pasfoto_path']) }}" target="_blank" class="small">Lihat File</a></div>
+                        @if($pPasfoto)
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ Storage::url($pPasfoto) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
+                                    <i class="fas fa-eye me-1"></i> Lihat Pas Foto
+                                </a>
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
+                            </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ isset($pemain['id']) ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ $pPasfoto ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        @if($pPasfoto)
+                            <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                        @endif
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Foto KTP (Max 2MB)</label>
-                        @if(isset($pemain['ktp_path']) && $pemain['ktp_path'])
-                            <div class="mb-1"><a href="{{ Storage::url($pemain['ktp_path']) }}" target="_blank" class="small">Lihat File</a></div>
+                        @if($pKtp)
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ Storage::url($pKtp) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
+                                    <i class="fas fa-id-card me-1"></i> Lihat Foto KTP
+                                </a>
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
+                            </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ isset($pemain['id']) ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pKtp ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        @if($pKtp)
+                            <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                        @endif
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Foto KK (Max 2MB)</label>
-                        @if(isset($pemain['kk_path']) && $pemain['kk_path'])
-                            <div class="mb-1"><a href="{{ Storage::url($pemain['kk_path']) }}" target="_blank" class="small">Lihat File</a></div>
+                        @if($pKk)
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ Storage::url($pKk) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
+                                    <i class="fas fa-file-alt me-1"></i> Lihat KK
+                                </a>
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
+                            </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][kk]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ isset($pemain['id']) ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][kk]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pKk ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        @if($pKk)
+                            <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                        @endif
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Surat Keterangan Sehat (Gambar, max 2MB)</label>
-                        @if(isset($pemain['surat_sehat_path']) && $pemain['surat_sehat_path'])
-                            <div class="mb-1"><a href="{{ Storage::url($pemain['surat_sehat_path']) }}" target="_blank" class="small">Lihat File</a></div>
+                        @if($pSuratSehat)
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ Storage::url($pSuratSehat) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
+                                    <i class="fas fa-file-medical me-1"></i> Lihat Surat Sehat
+                                </a>
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
+                            </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][surat_sehat]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ isset($pemain['id']) ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][surat_sehat]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pSuratSehat ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        @if($pSuratSehat)
+                            <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -231,9 +368,9 @@
                 </span>
             </div>
             @if(!$reg || $reg->status != 'Terverifikasi')
-            <button type="button" class="btn btn-sm btn-outline-info" id="btnTambahOfficial" {{ count($officialList) >= 5 ? 'disabled' : '' }}>
+            <button type="button" class="btn btn-sm btn-outline-info fw-semibold" id="btnTambahOfficial" {{ count($officialList) >= 5 ? 'disabled' : '' }}>
                 <i class="fas {{ count($officialList) >= 5 ? 'fa-check' : 'fa-plus' }} me-1"></i>
-                {{ count($officialList) >= 5 ? 'Maksimal 5 Official Tercapai' : 'Tambah Official' }}
+                {{ count($officialList) >= 5 ? 'Tambah Official (Maksimal)' : '+ Tambah Official' }}
             </button>
             @endif
         </div>
@@ -245,6 +382,11 @@
             @endif
             
             @foreach($officialList as $index => $official)
+            @php
+                $dbOfficial = (isset($official['id']) && $reg) ? $reg->members->firstWhere('id', $official['id']) : null;
+                $pasfotoPath = $official['pasfoto_path'] ?? ($dbOfficial->pasfoto_path ?? null);
+                $ktpPath = $official['ktp_path'] ?? ($dbOfficial->ktp_path ?? null);
+            @endphp
             <div class="official-item border p-3 mb-3 rounded position-relative">
                 @if(!$reg || $reg->status != 'Terverifikasi')
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-hapus-official" aria-label="Close"></button>
@@ -262,13 +404,13 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">NIK</label>
-                        <input type="text" name="official[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" value="{{ $official['nik'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="official[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" value="{{ $official['nik'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">Jabatan</label>
                         <select name="official[{{ $index }}][jabatan]" class="form-select form-select-sm" required {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
                             <option value="">-- Pilih --</option>
-                            @foreach(['Manajer','Pelatih Kepala','Asisten Pelatih','Pelatih Kiper','Medis','Kitman'] as $j)
+                            @foreach(['Manajer','Pelatih Kepala','Asisten Pelatih','Pelatih Kiper','Medis','Kitman','Fisioterapis','Ofisial Lainnya'] as $j)
                             <option value="{{ $j }}" {{ ($official['jabatan'] ?? '') === $j ? 'selected' : '' }}>{{ $j }}</option>
                             @endforeach
                         </select>
@@ -279,17 +421,33 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Pas Foto (Max 2MB)</label>
-                        @if(isset($official['pasfoto_path']) && $official['pasfoto_path'])
-                            <div class="mb-1"><a href="{{ Storage::url($official['pasfoto_path']) }}" target="_blank" class="small">Lihat File</a></div>
+                        @if($pasfotoPath)
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ Storage::url($pasfotoPath) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
+                                    <i class="fas fa-eye me-1"></i> Lihat Pas Foto
+                                </a>
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
+                            </div>
                         @endif
-                        <input type="file" name="official[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ isset($official['id']) ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="official[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ $pasfotoPath ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        @if($pasfotoPath)
+                            <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                        @endif
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Foto KTP (Max 2MB)</label>
-                        @if(isset($official['ktp_path']) && $official['ktp_path'])
-                            <div class="mb-1"><a href="{{ Storage::url($official['ktp_path']) }}" target="_blank" class="small">Lihat File</a></div>
+                        @if($ktpPath)
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ Storage::url($ktpPath) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
+                                    <i class="fas fa-id-card me-1"></i> Lihat Foto KTP
+                                </a>
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
+                            </div>
                         @endif
-                        <input type="file" name="official[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ isset($official['id']) ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="official[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $ktpPath ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        @if($ktpPath)
+                            <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -378,13 +536,13 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label fw-semibold small">NIK</label>
-                <input type="text" name="official[__INDEX__][nik]" class="form-control form-control-sm" maxlength="16" required>
+                <input type="text" name="official[__INDEX__][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" required>
             </div>
             <div class="col-md-3">
                 <label class="form-label fw-semibold small">Jabatan</label>
                 <select name="official[__INDEX__][jabatan]" class="form-select form-select-sm" required>
                     <option value="">-- Pilih --</option>
-                    @foreach(['Manajer','Pelatih Kepala','Asisten Pelatih','Pelatih Kiper','Medis','Kitman'] as $j)
+                    @foreach(['Manajer','Pelatih Kepala','Asisten Pelatih','Pelatih Kiper','Medis','Kitman','Fisioterapis','Ofisial Lainnya'] as $j)
                     <option value="{{ $j }}">{{ $j }}</option>
                     @endforeach
                 </select>
@@ -395,11 +553,11 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold small">Pas Foto (Max 2MB)</label>
-                <input type="file" name="official[__INDEX__][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" required>
+                <input type="file" name="official[__INDEX__][pasfoto]" class="form-control form-control-sm file-input-field" accept="image/jpeg,image/png" required>
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold small">Foto KTP (Max 2MB)</label>
-                <input type="file" name="official[__INDEX__][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" required>
+                <input type="file" name="official[__INDEX__][ktp]" class="form-control form-control-sm file-input-field" accept="image/jpeg,image/png,application/pdf" required>
             </div>
         </div>
     </div>
@@ -410,6 +568,12 @@
 document.addEventListener('DOMContentLoaded', function() {
     const MAX_PEMAIN = 25;
     const MAX_OFFICIAL = 5;
+
+    // Scroll ke error jika ada kesalahan validasi
+    const validationBox = document.getElementById('validationErrorsBox');
+    if (validationBox) {
+        validationBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
     let pemainCount = document.querySelectorAll('#containerPemain .pemain-item').length;
     let officialCount = document.querySelectorAll('#containerOfficial .official-item').length;
@@ -435,17 +599,52 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.display-pemain-count').forEach(el => el.innerText = pemainCount);
         document.querySelectorAll('.display-official-count').forEach(el => el.innerText = officialCount);
 
+        // Update progress bar & label Pemain
+        const pBarPemain = document.getElementById('progressBarPemain');
+        if (pBarPemain) {
+            const pctPemain = Math.min(100, Math.round((pemainCount / MAX_PEMAIN) * 100));
+            pBarPemain.style.width = pctPemain + '%';
+            pBarPemain.setAttribute('aria-valuenow', pemainCount);
+        }
+        const txtPemain = document.getElementById('textStatusPemain');
+        if (txtPemain) {
+            txtPemain.innerText = pemainCount >= MAX_PEMAIN ? 'Maksimal 25 Peserta' : 'Sisa kuota: ' + (MAX_PEMAIN - pemainCount) + ' peserta';
+        }
+
+        // Update progress bar & label Official
+        const pBarOfficial = document.getElementById('progressBarOfficial');
+        if (pBarOfficial) {
+            const pctOfficial = Math.min(100, Math.round((officialCount / MAX_OFFICIAL) * 100));
+            pBarOfficial.style.width = pctOfficial + '%';
+            pBarOfficial.setAttribute('aria-valuenow', officialCount);
+        }
+        const txtOfficial = document.getElementById('textStatusOfficial');
+        if (txtOfficial) {
+            txtOfficial.innerText = officialCount >= MAX_OFFICIAL ? 'Maksimal 5 Official' : 'Sisa kuota: ' + (MAX_OFFICIAL - officialCount) + ' official';
+        }
+
+        // Toggle banner dan badge jika kedua data sudah maksimal
+        const bannerMaksimal = document.getElementById('bannerMaksimal');
+        const badgeMaksimalPill = document.getElementById('badgeMaksimalPill');
+        if (pemainCount >= MAX_PEMAIN && officialCount >= MAX_OFFICIAL) {
+            if (bannerMaksimal) bannerMaksimal.classList.remove('d-none');
+            if (badgeMaksimalPill) badgeMaksimalPill.classList.remove('d-none');
+        } else {
+            if (bannerMaksimal) bannerMaksimal.classList.add('d-none');
+            if (badgeMaksimalPill) badgeMaksimalPill.classList.add('d-none');
+        }
+
         // Update tombol Tambah Pemain (dinonaktifkan jika sudah 25)
         const btnPemain = document.getElementById('btnTambahPemain');
         if (btnPemain) {
             if (pemainCount >= MAX_PEMAIN) {
                 btnPemain.disabled = true;
                 btnPemain.classList.add('disabled');
-                btnPemain.innerHTML = '<i class="fas fa-check me-1"></i> Maksimal 25 Pemain Tercapai';
+                btnPemain.innerHTML = '<i class="fas fa-check me-1"></i> Tambah Pemain (Maksimal)';
             } else {
                 btnPemain.disabled = false;
                 btnPemain.classList.remove('disabled');
-                btnPemain.innerHTML = '<i class="fas fa-plus me-1"></i> Tambah Pemain';
+                btnPemain.innerHTML = '<i class="fas fa-plus me-1"></i> + Tambah Pemain';
             }
         }
 
@@ -455,11 +654,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (officialCount >= MAX_OFFICIAL) {
                 btnOfficial.disabled = true;
                 btnOfficial.classList.add('disabled');
-                btnOfficial.innerHTML = '<i class="fas fa-check me-1"></i> Maksimal 5 Official Tercapai';
+                btnOfficial.innerHTML = '<i class="fas fa-check me-1"></i> Tambah Official (Maksimal)';
             } else {
                 btnOfficial.disabled = false;
                 btnOfficial.classList.remove('disabled');
-                btnOfficial.innerHTML = '<i class="fas fa-plus me-1"></i> Tambah Official';
+                btnOfficial.innerHTML = '<i class="fas fa-plus me-1"></i> + Tambah Official';
             }
         }
     }
@@ -516,6 +715,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     let emptyMsg = document.getElementById('emptyOfficialMsg');
                     if(emptyMsg) emptyMsg.style.display = 'block';
                 }
+            }
+        }
+    });
+
+    // Feedback visual ketika pengguna memilih file baru
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.type === 'file') {
+            const input = e.target;
+            const parent = input.parentElement;
+            let previewIndicator = parent.querySelector('.file-chosen-indicator');
+            if (input.files && input.files[0]) {
+                const fileName = input.files[0].name;
+                const fileSize = (input.files[0].size / 1024 / 1024).toFixed(2);
+                if (!previewIndicator) {
+                    previewIndicator = document.createElement('div');
+                    previewIndicator.className = 'file-chosen-indicator mt-1 text-primary small d-flex align-items-center gap-1';
+                    parent.appendChild(previewIndicator);
+                }
+                previewIndicator.innerHTML = '<i class="fas fa-file-alt"></i> <span>' + fileName + ' (' + fileSize + ' MB)</span>';
+            } else if (previewIndicator) {
+                previewIndicator.remove();
             }
         }
     });

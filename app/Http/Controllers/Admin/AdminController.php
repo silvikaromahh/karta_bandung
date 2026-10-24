@@ -11,6 +11,7 @@ use App\Models\TournamentSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -32,17 +33,7 @@ class AdminController extends Controller
         $needVerification = Registration::with('user')
             ->where('status', 'Menunggu Verifikasi')->latest()->take(5)->get();
 
-        // Chart data: registrations per day (last 7 days)
-        $chartData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            $chartData[] = [
-                'date' => now()->subDays($i)->isoFormat('D MMM'),
-                'count' => Registration::whereDate('created_at', $date)->count(),
-            ];
-        }
-
-        return view('admin.dashboard', compact('stats', 'latestRegistrations', 'upcomingMatches', 'needVerification', 'chartData'));
+        return view('admin.dashboard', compact('stats', 'latestRegistrations', 'upcomingMatches', 'needVerification'));
     }
 
     // ── DATA PENDAFTAR ────────────────────────────────────────────
@@ -139,6 +130,26 @@ class AdminController extends Controller
             'type' => 'danger',
         ]);
         return redirect()->route('admin.verifikasi')->with('success', 'Pendaftaran berhasil ditolak dengan alasan yang diberikan.');
+    }
+
+    public function deleteMember($registrationId, $memberId)
+    {
+        $registration = Registration::findOrFail($registrationId);
+        $member = $registration->members()->findOrFail($memberId);
+
+        $name = $member->full_name;
+        $tipe = $member->tipe;
+
+        // Delete uploaded files if exist
+        if ($member->ktp_path) Storage::disk('public')->delete($member->ktp_path);
+        if ($member->kk_path) Storage::disk('public')->delete($member->kk_path);
+        if ($member->surat_sehat_path) Storage::disk('public')->delete($member->surat_sehat_path);
+        if ($member->pasfoto_path) Storage::disk('public')->delete($member->pasfoto_path);
+
+        $member->delete();
+
+        $label = $tipe === 'pemain' ? 'Pemain' : 'Official';
+        return back()->with('success', "Data {$label} \"{$name}\" berhasil dihapus.");
     }
 
     // ── PERTANDINGAN ─────────────────────────────────────────────

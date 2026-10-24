@@ -92,22 +92,6 @@
 </div>
 
 <div class="row g-4">
-    <!-- GRAFIK PENDAFTARAN -->
-    <div class="col-lg-8">
-        <div class="card border-0 card-karta">
-            <div class="card-header border-0 bg-white d-flex align-items-center justify-content-between py-3">
-                <div>
-                    <h6 class="fw-bold mb-0" style="color:#0a1628;">Statistik Pendaftaran</h6>
-                    <small class="text-muted">7 Hari Terakhir</small>
-                </div>
-                <i class="fas fa-chart-bar text-success"></i>
-            </div>
-            <div class="card-body">
-                <canvas id="regChart" height="100"></canvas>
-            </div>
-        </div>
-    </div>
-
     <!-- VERIFIKASI PERLU -->
     <div class="col-lg-4">
         <div class="card border-0 card-karta h-100">
@@ -155,11 +139,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($latestRegistrations as $reg)
+                        @forelse($latestRegistrations as $reg)
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-semibold small" style="color:#0a1628;">{{ $reg->nama_tim }}</div>
-                                <div class="text-muted" style="font-size:0.72rem;">{{ $reg->user->name }} ({{ $reg->user->email }})</div>
+                                <div class="text-muted" style="font-size:0.72rem;">{{ $reg->user->name ?? '-' }} ({{ $reg->user->email ?? '-' }})</div>
                             </td>
                             <td class="small">{{ $reg->kecamatan }}</td>
                             <td class="small text-muted">{{ $reg->created_at->format('d M Y') }}</td>
@@ -172,7 +156,11 @@
                                 </span>
                             </td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4 small">Belum ada data pendaftar.</td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -210,33 +198,4 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-const ctx = document.getElementById('regChart');
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {!! json_encode(array_column($chartData, 'date')) !!},
-        datasets: [{
-            label: 'Pendaftar Baru',
-            data: {!! json_encode(array_column($chartData, 'count')) !!},
-            backgroundColor: 'rgba(26,155,82,0.15)',
-            borderColor: '#1a9b52',
-            borderWidth: 2,
-            borderRadius: 6,
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-            x: { grid: { display: false } }
-        }
-    }
-});
-</script>
-@endpush
 @endsection
