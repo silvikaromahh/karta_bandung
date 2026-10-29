@@ -79,7 +79,11 @@ Route::prefix('peserta')->name('peserta.')->middleware(['auth', 'role:user'])->g
     Route::get('/dashboard', [PesertaController::class, 'dashboard'])->name('dashboard');
     Route::get('/pendaftaran', [PesertaController::class, 'pendaftaran'])->name('pendaftaran');
     Route::get('/pendaftaran/cetak', [PesertaController::class, 'pendaftaranCetak'])->name('pendaftaran.cetak');
-    Route::post('/pendaftaran', [PesertaController::class, 'storePendaftaran'])->name('pendaftaran.store');
+    Route::post('/pendaftaran/draft', [PesertaController::class, 'savePendaftaranDraft'])->name('pendaftaran.draft');
+    Route::post('/pendaftaran/member', [PesertaController::class, 'savePendaftaranMember'])->name('pendaftaran.member');
+    Route::post('/pendaftaran/member/file', [PesertaController::class, 'uploadPendaftaranMemberFile'])->name('pendaftaran.member.file');
+    Route::delete('/pendaftaran/member/{member}', [PesertaController::class, 'deletePendaftaranMember'])->name('pendaftaran.member.delete');
+    Route::post('/pendaftaran/ajukan', [PesertaController::class, 'submitPendaftaran'])->name('pendaftaran.submit');
     Route::get('/profil', [PesertaController::class, 'profil'])->name('profil');
     Route::post('/profil', [PesertaController::class, 'updateProfil'])->name('profil.update');
     Route::get('/jadwal', [PesertaController::class, 'jadwal'])->name('jadwal');

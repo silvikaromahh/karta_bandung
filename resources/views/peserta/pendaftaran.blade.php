@@ -7,10 +7,12 @@
     $statusInfo = [
         null => ['color'=>'secondary','icon'=>'fa-circle','label'=>'Belum Mendaftar','desc'=>'Anda belum mendaftarkan tim. Daftarkan sekarang!'],
         'Menunggu Verifikasi' => ['color'=>'warning','icon'=>'fa-hourglass-half','label'=>'Menunggu Verifikasi','desc'=>'Data tim sedang diperiksa oleh panitia. Verifikasi pemain berlangsung tgl 2 Nov s/d 10 Nov 2026.'],
+        'Draf' => ['color'=>'info','icon'=>'fa-pen','label'=>'Draf','desc'=>'Data tersimpan sebagai draf. Simpan tiap pemain atau official, lalu ajukan ke admin setelah lengkap.'],
         'Terverifikasi' => ['color'=>'success','icon'=>'fa-check-circle','label'=>'Terverifikasi','desc'=>'Selamat! Tim Anda resmi terdaftar.'],
         'Ditolak' => ['color'=>'danger','icon'=>'fa-times-circle','label'=>'Ditolak','desc'=>'Pendaftaran tim ditolak. Silakan perbaiki dan kirim ulang.'],
     ];
     $status = $reg ? $reg->status : null;
+    $isLocked = ($reg && in_array($reg->status, ['Menunggu Verifikasi', 'Terverifikasi'], true)) || $registrationClosed;
     $info = $statusInfo[$status] ?? $statusInfo[null];
     $pemainList = old('pemain', $reg ? $reg->members()->where('tipe', 'pemain')->get()->toArray() : [[]]);
     $officialList = old('official', $reg ? $reg->members()->where('tipe', 'official')->get()->toArray() : []);
@@ -30,6 +32,20 @@
     @endif
 </div>
 
+@if($registrationClosed)
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="fas fa-lock fa-lg"></i>
+    <div><strong>Pendaftaran telah ditutup.</strong>
+        @if($settings->registration_closes_at)
+            Pendaftaran ditutup mulai {{ $settings->registration_closes_at->format('d/m/Y') }}.
+        @else
+            Saat ini pendaftaran tidak dibuka oleh panitia.
+        @endif
+        Data yang sudah tersimpan tetap dapat dilihat, tetapi tidak dapat diubah atau diajukan.
+    </div>
+</div>
+@endif
+
 {{-- STATUS CARD --}}
 <div class="card border-0 card-karta mb-4" style="border-left:5px solid var(--bs-{{ $info['color'] }})!important;">
     <div class="card-body p-4">
@@ -42,7 +58,7 @@
                     <h5 class="fw-bold mb-1" style="color:#0a1628;">Status: {{ $info['label'] }}</h5>
                     <p class="text-muted mb-0 small">
                         @if($reg && $reg->status === 'Menunggu Verifikasi')
-                            Pendaftaran Anda masih aktif. Anda dapat memperbarui dan menambahkan data peserta atau official.
+                            Data sudah diajukan dan sedang diperiksa panitia.
                         @elseif($reg && $reg->status === 'Terverifikasi')
                             Pendaftaran tim Anda sudah terverifikasi dan resmi terkunci oleh panitia. Hubungi panitia jika perlu perubahan data.
                         @else
@@ -156,7 +172,12 @@
 </div>
 
 {{-- FORMULIR PENDAFTARAN --}}
-<form method="POST" action="{{ route('peserta.pendaftaran.store') }}" enctype="multipart/form-data" id="formPendaftaran">
+@if(!$isLocked)
+<div class="alert alert-info small mb-3">
+    Simpan data tim terlebih dahulu. Setelah itu, simpan setiap pemain dan official secara terpisah; berkas dikirim satu per satu. Setelah semua lengkap, pilih <strong>Ajukan ke Admin</strong>.
+</div>
+@endif
+<form method="POST" action="{{ route('peserta.pendaftaran.submit') }}" enctype="multipart/form-data" id="formPendaftaran">
     @csrf
 
     @if($errors->any())
@@ -209,7 +230,7 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold small">Surat Rekomendasi (PDF/Gambar, Max 2MB) <span class="text-danger">*</span></label>
-                    <input type="file" name="surat_rekomendasi" class="form-control" accept=".pdf,.jpg,.jpeg,.png" {{ (!$reg || !$reg->surat_rekomendasi_path) ? 'required' : '' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                    <input type="file" name="surat_rekomendasi" class="form-control" accept=".pdf,.jpg,.jpeg,.png" {{ (!$reg || !$reg->surat_rekomendasi_path) ? 'required' : '' }} {{ $isLocked ? 'disabled' : '' }}>
                     @if($reg && $reg->surat_rekomendasi_path)
                     <div class="mt-2 d-flex align-items-center gap-2">
                         <a href="{{ Storage::url($reg->surat_rekomendasi_path) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none py-1 px-2 d-inline-flex align-items-center shadow-sm">
@@ -218,6 +239,10 @@
                         <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                     </div>
                     <small class="text-muted d-block mt-1" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
+                    @endif
+                    @if(!$isLocked)
+                    <button type="button" class="btn btn-sm btn-outline-success mt-3" id="btnSaveTeam"><i class="fas fa-save me-1"></i> Simpan Data Tim</button>
+                    <span class="small text-muted ms-2" id="teamSaveState"></span>
                     @endif
                 </div>
             </div>
@@ -233,7 +258,7 @@
                     Peserta: <strong class="display-pemain-count">{{ count($pemainList) }}</strong>/25
                 </span>
             </div>
-            @if(!$reg || $reg->status != 'Terverifikasi')
+            @if(!$isLocked)
             <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btnTambahPemain" {{ count($pemainList) >= 25 ? 'disabled' : '' }}>
                 <i class="fas {{ count($pemainList) >= 25 ? 'fa-check' : 'fa-plus' }} me-1"></i>
                 {{ count($pemainList) >= 25 ? 'Tambah Pemain (Maksimal)' : '+ Tambah Pemain' }}
@@ -252,7 +277,7 @@
                 $pSuratSehat = $pemain['surat_sehat_path'] ?? ($dbPemain->surat_sehat_path ?? null);
             @endphp
             <div class="pemain-item border p-3 mb-3 rounded position-relative">
-                @if(!$reg || $reg->status != 'Terverifikasi')
+                @if(!$isLocked)
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-hapus-pemain" aria-label="Close"></button>
                 @endif
                 <h6 class="fw-bold small mb-3">Pemain #<span class="pemain-counter">{{ $index + 1 }}</span></h6>
@@ -264,24 +289,24 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Nama Lengkap</label>
-                        <input type="text" name="pemain[{{ $index }}][full_name]" class="form-control form-control-sm" value="{{ $pemain['full_name'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="pemain[{{ $index }}][full_name]" class="form-control form-control-sm" value="{{ $pemain['full_name'] ?? '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">NIK</label>
-                        <input type="text" name="pemain[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" value="{{ $pemain['nik'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="pemain[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" value="{{ $pemain['nik'] ?? '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Nomor KK</label>
-                        <input type="text" name="pemain[{{ $index }}][nomor_kk]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" placeholder="16 digit" value="{{ $pemain['nomor_kk'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="pemain[{{ $index }}][nomor_kk]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" placeholder="16 digit" value="{{ $pemain['nomor_kk'] ?? '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                         <small class="text-muted d-block mt-1">Masukkan 16 digit nomor Kartu Keluarga.</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Tanggal Lahir</label>
-                        <input type="date" name="pemain[{{ $index }}][tanggal_lahir]" class="form-control form-control-sm" value="{{ isset($pemain['tanggal_lahir']) ? \Carbon\Carbon::parse($pemain['tanggal_lahir'])->format('Y-m-d') : '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="date" name="pemain[{{ $index }}][tanggal_lahir]" class="form-control form-control-sm" value="{{ isset($pemain['tanggal_lahir']) ? \Carbon\Carbon::parse($pemain['tanggal_lahir'])->format('Y-m-d') : '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Posisi</label>
-                        <select name="pemain[{{ $index }}][posisi]" class="form-select form-select-sm" required {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <select name="pemain[{{ $index }}][posisi]" class="form-select form-select-sm" required {{ $isLocked ? 'disabled' : '' }}>
                             <option value="">-- Posisi --</option>
                             @foreach(['Kiper','Bek Kiri','Bek Kanan','Bek Tengah','Gelandang Bertahan','Gelandang Tengah','Gelandang Serang','Sayap Kiri','Sayap Kanan','Striker'] as $p)
                             <option value="{{ $p }}" {{ ($pemain['posisi'] ?? '') === $p ? 'selected' : '' }}>{{ $p }}</option>
@@ -290,7 +315,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">No Punggung</label>
-                        <input type="number" name="pemain[{{ $index }}][nomor_punggung]" class="form-control form-control-sm" min="1" max="99" value="{{ $pemain['nomor_punggung'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="number" name="pemain[{{ $index }}][nomor_punggung]" class="form-control form-control-sm" min="1" max="99" value="{{ $pemain['nomor_punggung'] ?? '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Pas Foto (Max 2MB)</label>
@@ -302,7 +327,7 @@
                                 <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                             </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ $pPasfoto ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ $pPasfoto ? '' : 'required' }} {{ $isLocked ? 'disabled' : '' }}>
                         @if($pPasfoto)
                             <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                         @endif
@@ -317,7 +342,7 @@
                                 <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                             </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pKtp ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pKtp ? '' : 'required' }} {{ $isLocked ? 'disabled' : '' }}>
                         @if($pKtp)
                             <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                         @endif
@@ -332,7 +357,7 @@
                                 <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                             </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][kk]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pKk ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][kk]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pKk ? '' : 'required' }} {{ $isLocked ? 'disabled' : '' }}>
                         @if($pKk)
                             <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                         @endif
@@ -347,7 +372,7 @@
                                 <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                             </div>
                         @endif
-                        <input type="file" name="pemain[{{ $index }}][surat_sehat]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pSuratSehat ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="pemain[{{ $index }}][surat_sehat]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $pSuratSehat ? '' : 'required' }} {{ $isLocked ? 'disabled' : '' }}>
                         @if($pSuratSehat)
                             <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                         @endif
@@ -367,7 +392,7 @@
                     Official: <strong class="display-official-count">{{ count($officialList) }}</strong>/5
                 </span>
             </div>
-            @if(!$reg || $reg->status != 'Terverifikasi')
+            @if(!$isLocked)
             <button type="button" class="btn btn-sm btn-outline-info fw-semibold" id="btnTambahOfficial" {{ count($officialList) >= 5 ? 'disabled' : '' }}>
                 <i class="fas {{ count($officialList) >= 5 ? 'fa-check' : 'fa-plus' }} me-1"></i>
                 {{ count($officialList) >= 5 ? 'Tambah Official (Maksimal)' : '+ Tambah Official' }}
@@ -377,7 +402,7 @@
         <div class="card-body p-4" id="containerOfficial">
             @php $officialList = old('official', $reg ? $reg->members()->where('tipe', 'official')->get()->toArray() : []); @endphp
             
-            @if(count($officialList) == 0 && (!$reg || $reg->status != 'Terverifikasi'))
+            @if(count($officialList) == 0 && !$isLocked)
                 <p class="text-muted small text-center" id="emptyOfficialMsg">Belum ada official. Klik "Tambah Official" jika ada.</p>
             @endif
             
@@ -388,7 +413,7 @@
                 $ktpPath = $official['ktp_path'] ?? ($dbOfficial->ktp_path ?? null);
             @endphp
             <div class="official-item border p-3 mb-3 rounded position-relative">
-                @if(!$reg || $reg->status != 'Terverifikasi')
+                @if(!$isLocked)
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-hapus-official" aria-label="Close"></button>
                 @endif
                 <h6 class="fw-bold small mb-3">Official #<span class="official-counter">{{ $index + 1 }}</span></h6>
@@ -400,15 +425,15 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Nama Lengkap</label>
-                        <input type="text" name="official[{{ $index }}][full_name]" class="form-control form-control-sm" value="{{ $official['full_name'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="official[{{ $index }}][full_name]" class="form-control form-control-sm" value="{{ $official['full_name'] ?? '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">NIK</label>
-                        <input type="text" name="official[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" value="{{ $official['nik'] ?? '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="text" name="official[{{ $index }}][nik]" class="form-control form-control-sm" maxlength="16" minlength="16" pattern="[0-9]{16}" title="16 digit angka NIK" value="{{ $official['nik'] ?? '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">Jabatan</label>
-                        <select name="official[{{ $index }}][jabatan]" class="form-select form-select-sm" required {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <select name="official[{{ $index }}][jabatan]" class="form-select form-select-sm" required {{ $isLocked ? 'disabled' : '' }}>
                             <option value="">-- Pilih --</option>
                             @foreach(['Manajer','Pelatih Kepala','Asisten Pelatih','Pelatih Kiper','Medis','Kitman','Fisioterapis','Ofisial Lainnya'] as $j)
                             <option value="{{ $j }}" {{ ($official['jabatan'] ?? '') === $j ? 'selected' : '' }}>{{ $j }}</option>
@@ -417,7 +442,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Tanggal Lahir</label>
-                        <input type="date" name="official[{{ $index }}][tanggal_lahir]" class="form-control form-control-sm" value="{{ isset($official['tanggal_lahir']) ? \Carbon\Carbon::parse($official['tanggal_lahir'])->format('Y-m-d') : '' }}" required {{ $reg && $reg->status == 'Terverifikasi' ? 'readonly' : '' }}>
+                        <input type="date" name="official[{{ $index }}][tanggal_lahir]" class="form-control form-control-sm" value="{{ isset($official['tanggal_lahir']) ? \Carbon\Carbon::parse($official['tanggal_lahir'])->format('Y-m-d') : '' }}" required {{ $isLocked ? 'readonly' : '' }}>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Pas Foto (Max 2MB)</label>
@@ -429,7 +454,7 @@
                                 <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                             </div>
                         @endif
-                        <input type="file" name="official[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ $pasfotoPath ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="official[{{ $index }}][pasfoto]" class="form-control form-control-sm" accept="image/jpeg,image/png" {{ $pasfotoPath ? '' : 'required' }} {{ $isLocked ? 'disabled' : '' }}>
                         @if($pasfotoPath)
                             <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                         @endif
@@ -444,7 +469,7 @@
                                 <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Terunggah</span>
                             </div>
                         @endif
-                        <input type="file" name="official[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $ktpPath ? '' : 'required' }} {{ $reg && $reg->status == 'Terverifikasi' ? 'disabled' : '' }}>
+                        <input type="file" name="official[{{ $index }}][ktp]" class="form-control form-control-sm" accept="image/jpeg,image/png,application/pdf" {{ $ktpPath ? '' : 'required' }} {{ $isLocked ? 'disabled' : '' }}>
                         @if($ktpPath)
                             <small class="text-muted d-block" style="font-size:0.75rem;">Pilih file baru jika ingin mengganti.</small>
                         @endif
@@ -456,14 +481,18 @@
     </div>
 
     <div class="d-flex gap-2 justify-content-end">
-        @if($reg && $reg->status === 'Terverifikasi')
+        @if($isLocked)
         <div class="alert alert-success mb-0 flex-grow-1 d-flex align-items-center gap-2 py-2">
             <i class="fas fa-lock text-success"></i>
-            <span class="small"><strong>Pendaftaran terkunci.</strong> Hubungi panitia jika perlu perubahan data.</span>
+            <span class="small"><strong>Pendaftaran terkunci.</strong>
+                @if($registrationClosed) Pengisian dan pengajuan sudah ditutup.
+                @elseif($reg->status === 'Menunggu Verifikasi') Data sedang diperiksa admin.
+                @else Hubungi panitia jika perlu perubahan data. @endif
+            </span>
         </div>
         @else
-        <button type="submit" class="btn btn-green fw-bold btn-lg px-5" id="btnSubmit">
-            <i class="fas fa-save me-2"></i> Perbarui & Lanjut
+        <button type="button" class="btn btn-green fw-bold btn-lg px-5" id="btnSubmit">
+            <i class="fas fa-paper-plane me-2"></i> Ajukan ke Admin
         </button>
         @endif
     </div>
@@ -663,6 +692,158 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    const csrf = document.querySelector('#formPendaftaran input[name="_token"]')?.value;
+    const api = {
+        draft: @json(route('peserta.pendaftaran.draft')),
+        member: @json(route('peserta.pendaftaran.member')),
+        file: @json(route('peserta.pendaftaran.member.file')),
+        submit: @json(route('peserta.pendaftaran.submit')),
+        deleteBase: @json(url('/peserta/pendaftaran/member')),
+    };
+    const editable = @json(!$isLocked);
+    document.getElementById('formPendaftaran')?.addEventListener('submit', event => event.preventDefault());
+
+    async function postForm(url, data, method = 'POST') {
+        const response = await fetch(url, { method, headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }, body: data });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || Object.values(result.errors || {}).flat().join(' ') || 'Data gagal disimpan.');
+        return result;
+    }
+
+    function teamFormData() {
+        const data = new FormData();
+        data.append('nama_tim', document.querySelector('[name="nama_tim"]')?.value || '');
+        const recommendation = document.querySelector('[name="surat_rekomendasi"]');
+        if (recommendation?.files?.[0]) data.append('surat_rekomendasi', recommendation.files[0]);
+        return data;
+    }
+
+    async function saveTeam() {
+        const teamName = document.querySelector('[name="nama_tim"]');
+        const recommendation = document.querySelector('[name="surat_rekomendasi"]');
+        if (!teamName?.checkValidity() || !recommendation?.checkValidity()) {
+            teamName?.reportValidity();
+            recommendation?.reportValidity();
+            throw new Error('Lengkapi nama tim dan surat rekomendasi terlebih dahulu.');
+        }
+        const result = await postForm(api.draft, teamFormData());
+        if (recommendation) {
+            recommendation.value = '';
+            recommendation.required = false;
+        }
+        return result;
+    }
+
+    function memberData(item, type) {
+        const data = new FormData();
+        data.append('tipe', type);
+        item.querySelectorAll('input,select,textarea').forEach((field) => {
+            const match = field.name.match(/\]\[([^\]]+)\]$/);
+            if (!match || field.type === 'file' || field.disabled) return;
+            if (match[1] === 'id') data.append('id', field.value);
+            else data.append(match[1], field.value);
+        });
+        return data;
+    }
+
+    function validateMember(item) {
+        const controls = [...item.querySelectorAll('input:not([type="hidden"]), select, textarea')]
+            .filter(control => !control.disabled);
+        const invalid = controls.find(control => !control.checkValidity());
+        if (invalid) {
+            invalid.reportValidity();
+            return false;
+        }
+        return true;
+    }
+
+    function ensureMemberButtons() {
+        if (!editable) return;
+        document.querySelectorAll('#containerPemain .pemain-item, #containerOfficial .official-item').forEach((item) => {
+            if (item.querySelector('.btn-save-member')) return;
+            const actions = document.createElement('div');
+            actions.className = 'd-flex align-items-center gap-2 mt-3';
+            actions.innerHTML = '<button type="button" class="btn btn-sm btn-primary btn-save-member"><i class="fas fa-save me-1"></i> Simpan Anggota</button><span class="small text-muted member-save-state"></span>';
+            if (item.querySelector('input[name$="[id]"]')?.value) actions.querySelector('.member-save-state').textContent = 'Tersimpan';
+            item.appendChild(actions);
+        });
+    }
+
+    document.getElementById('btnSaveTeam')?.addEventListener('click', async function() {
+        const state = document.getElementById('teamSaveState');
+        this.disabled = true;
+        if (state) state.textContent = 'Menyimpan…';
+        try {
+            await saveTeam();
+            if (state) state.textContent = 'Data tim tersimpan.';
+        } catch (error) {
+            if (state) state.textContent = error.message;
+        } finally { this.disabled = false; }
+    });
+
+    document.getElementById('btnSubmit')?.addEventListener('click', async function() {
+        const items = [...document.querySelectorAll('#containerPemain .pemain-item, #containerOfficial .official-item')];
+        if (items.some(item => !item.querySelector('input[name$="[id]"]')?.value)) {
+            alert('Simpan setiap pemain dan official terlebih dahulu.');
+            return;
+        }
+        this.disabled = true;
+        try {
+            await saveTeam();
+            const data = new FormData();
+            data.append('confirmation', '1');
+            const result = await postForm(api.submit, data);
+            window.location.href = result.redirect;
+        } catch (error) {
+            alert(error.message);
+            this.disabled = false;
+        }
+    });
+
+    document.addEventListener('click', async function(e) {
+        const button = e.target.closest('.btn-save-member');
+        if (!button) return;
+        const item = button.closest('.pemain-item, .official-item');
+        const type = item.classList.contains('pemain-item') ? 'pemain' : 'official';
+        const state = item.querySelector('.member-save-state');
+        button.disabled = true;
+        if (state) state.textContent = 'Menyimpan data…';
+        try {
+            await saveTeam();
+            if (!validateMember(item)) {
+                throw new Error('Periksa data anggota yang wajib diisi.');
+            }
+            const result = await postForm(api.member, memberData(item, type));
+            let idInput = item.querySelector('input[name$="[id]"]');
+            if (!idInput) {
+                idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = `${type}[${Date.now()}][id]`;
+                item.prepend(idInput);
+            }
+            idInput.value = result.id;
+            const fileFields = type === 'pemain' ? ['pasfoto','ktp','kk','surat_sehat'] : ['pasfoto','ktp'];
+            for (const fieldName of fileFields) {
+                const input = item.querySelector(`input[type="file"][name$="[${fieldName}]"]`);
+                if (input?.files?.[0]) {
+                    const upload = new FormData();
+                    upload.append('member_id', result.id);
+                    upload.append('field', fieldName);
+                    upload.append('file', input.files[0]);
+                    await postForm(api.file, upload);
+                    input.value = '';
+                    input.required = false;
+                }
+            }
+            if (state) state.textContent = 'Tersimpan. Berkas dikirim satu per satu.';
+        } catch (error) {
+            if (state) state.textContent = error.message;
+        } finally { button.disabled = false; }
+    });
+
+    document.getElementById('btnTambahPemain')?.addEventListener('click', () => setTimeout(ensureMemberButtons, 0));
+    document.getElementById('btnTambahOfficial')?.addEventListener('click', () => setTimeout(ensureMemberButtons, 0));
+
     document.getElementById('btnTambahPemain')?.addEventListener('click', function() {
         if(pemainCount >= MAX_PEMAIN) {
             alert('Maksimal pemain adalah ' + MAX_PEMAIN);
@@ -694,7 +875,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounters();
     });
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', async function(e) {
         if(e.target.classList.contains('btn-hapus-pemain') || e.target.closest('.btn-hapus-pemain')) {
             if(pemainCount <= 1) {
                 alert('Minimal harus ada 1 pemain!');
@@ -702,14 +883,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if(confirm('Hapus pemain ini?')) {
                 const item = e.target.closest('.pemain-item');
-                if (item) item.remove();
+                if (item) {
+                    const id = item.querySelector('input[name$="[id]"]')?.value;
+                    if (id) {
+                        const response = await fetch(`${api.deleteBase}/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+                        if (!response.ok) { alert('Pemain gagal dihapus dari draf.'); return; }
+                    }
+                    item.remove();
+                }
                 updateCounters();
             }
         }
         if(e.target.classList.contains('btn-hapus-official') || e.target.closest('.btn-hapus-official')) {
             if(confirm('Hapus official ini?')) {
                 const item = e.target.closest('.official-item');
-                if (item) item.remove();
+                if (item) {
+                    const id = item.querySelector('input[name$="[id]"]')?.value;
+                    if (id) {
+                        const response = await fetch(`${api.deleteBase}/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+                        if (!response.ok) { alert('Official gagal dihapus dari draf.'); return; }
+                    }
+                    item.remove();
+                }
                 updateCounters();
                 if(officialCount === 0) {
                     let emptyMsg = document.getElementById('emptyOfficialMsg');
@@ -741,6 +936,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Jalankan updateCounters saat halaman dimuat
+    ensureMemberButtons();
     updateCounters();
 });
 </script>

@@ -13,12 +13,27 @@ class TournamentSetting extends Model
         'name',
         'logo',
         'registration_schedule',
+        'registration_closes_at',
         'tournament_dates',
         'location',
         'total_prize',
         'rules',
         'registration_status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'registration_closes_at' => 'date',
+        ];
+    }
+
+    public function isRegistrationClosed(): bool
+    {
+        return $this->registration_status !== 'Buka'
+            || ($this->registration_closes_at !== null
+                && $this->registration_closes_at->toDateString() <= today('Asia/Jakarta')->toDateString());
+    }
 
     public static function getSettings()
     {

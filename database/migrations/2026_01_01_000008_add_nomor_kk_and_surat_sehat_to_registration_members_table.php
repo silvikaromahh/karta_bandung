@@ -9,15 +9,26 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('registration_members', function (Blueprint $table) {
-            $table->string('nomor_kk', 16)->nullable()->after('nik');
-            $table->string('surat_sehat_path')->nullable()->after('kk_path');
+            if (!Schema::hasColumn('registration_members', 'nomor_kk')) {
+                $table->string('nomor_kk', 16)->nullable()->after('nik');
+            }
+            if (!Schema::hasColumn('registration_members', 'surat_sehat_path')) {
+                $table->string('surat_sehat_path')->nullable()->after('kk_path');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('registration_members', function (Blueprint $table) {
-            $table->dropColumn(['nomor_kk', 'surat_sehat_path']);
+            $columns = array_filter(
+                ['nomor_kk', 'surat_sehat_path'],
+                fn (string $column) => Schema::hasColumn('registration_members', $column)
+            );
+
+            if ($columns) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

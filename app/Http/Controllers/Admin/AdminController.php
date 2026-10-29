@@ -342,13 +342,17 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required|string|max:200',
             'registration_schedule' => 'required|string',
+            'registration_closes_at' => 'nullable|date',
             'tournament_dates' => 'required|string',
             'location' => 'required|string',
             'total_prize' => 'required|string',
             'registration_status' => 'required|in:Buka,Tutup,Segera',
         ]);
         $settings = TournamentSetting::getSettings();
-        $settings->update($request->except('_token', '_method', 'logo'));
+        $settings->update($request->only([
+            'name', 'registration_schedule', 'registration_closes_at',
+            'tournament_dates', 'location', 'total_prize', 'rules', 'registration_status',
+        ]));
         return back()->with('success', 'Pengaturan turnamen berhasil disimpan.');
     }
 

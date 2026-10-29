@@ -33,6 +33,12 @@
                                    placeholder="cth: 10 Oktober 2026 - 31 Oktober 2026" required>
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Tanggal Tutup Pendaftaran</label>
+                            <input type="date" name="registration_closes_at" class="form-control"
+                                   value="{{ old('registration_closes_at', $settings->registration_closes_at?->format('Y-m-d')) }}">
+                            <div class="form-text text-muted">Pendaftaran otomatis ditutup mulai tanggal ini. Kosongkan jika tidak memakai tanggal penutupan otomatis.</div>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold small">Tanggal Pelaksanaan Turnamen <span class="text-danger">*</span></label>
                             <input type="text" name="tournament_dates" class="form-control"
                                    value="{{ old('tournament_dates', $settings->tournament_dates) }}"
